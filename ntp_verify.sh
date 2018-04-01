@@ -1,23 +1,18 @@
 #!/bin/bash
+#Dmitriy Litvin 2018
 
-# Verify NTP service and configuration
+#CHECK PROC
+if [ ! -n  "$(ps aux | awk '{ print $1 }' | grep ntp)" ]; then `service ntp restart`; echo 'NOTICE: ntp is not running'; fi
 
-# Check service status and run if not active 
 
-NTPState=`systemctl is-active ntp` 
+#CHECK FILE
+if [ ! -f  "/etc/ntp.conf" -a ! -f  "/etc/ntp.conf.bak" ]; then echo 'NOTICE: ups...'; exit 1; fi
+if [ ! -f  "/etc/ntp.conf.bak" ]; then cp /etc/ntp.conf /etc/ntp.conf.bak; echo 'NOTICE: bak file restore'; fi
+if [ ! -f  "/etc/ntp.conf" ]; then cp /etc/ntp.conf.bak /etc/ntp.conf; echo 'NOTICE: conf file restore'; fi
 
-if [ -n "$NTPState" -a "$NTPState" != "active" ]
-    then
-	systemctl start ntp
-fi
-
-# Get changes and restore ntp.conf
-if [ -f /etc/ntp.conf.backup ]
- then
-    GETDIFF=`diff /etc/ntp.conf.backup /etc/ntp.conf`
-    if [ -n "$GETDIFF" ]
-     then
-	echo "NOTICE: /etc/ntp.conf was changed. Calculated diff: $GETDIFF"
-	cp /etc/ntp.conf.backup /etc/ntp.conf
-    fi
-fi
+#CHEK CHANGE
+if [ -n "$(diff /etc/ntp.conf.bak /etc/ntp.conf)" ]; then 
+echo 'NOTICE: /etc/ntp.conf was changed. Calculated diff:'
+diff -U0  /etc/ntp.conf /etc/ntp.conf.bak
+cp /etc/ntp.conf.bak /etc/ntp.conf 
+service ntp restart; fi

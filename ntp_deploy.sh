@@ -1,35 +1,21 @@
 #!/bin/bash
+#Dmitriy Litvin 2018
 
-# Deploy NTP service
+#set -x
+#INSTALL NTP
+apt update >> /dev/null 2>&1 && apt install -y ntp >> /dev/null 2>&1
 
+#CONFIG NTP
+sed -i '/ntp_verify.sh/d' /etc/crontab
+sed -i '/ua.pool.ntp.org/d' /etc/ntp.conf
+sed -i 's/^pool/#pool/g' /etc/ntp.conf
+sed -i 's/^server/#server/g' /etc/ntp.conf
+sed -i '/pool 3./a \pool ua.pool.ntp.org iburst' /etc/ntp.conf
+if  [ -f /etc/ntp.conf.bak ]; then rm /etc/ntp.conf.bak; fi
+cp /etc/ntp.conf /etc/ntp.conf.bak
 
-# Check if NTP already installed /////////////////////////////////////////////
-Installed=`dpkg -l | grep ntp`
-if [ -z "$Installed" ]
-    then
-	apt install ntp -y
-#	else
-#		echo "NTP Already installed"
-fi
+#START NTP
+service ntp restart
 
-# Rewrite NTP server's DNS name if /etc/ntp.conf exists ////////////////////////
-# and make backup /etc/ntp.conf
-if [ -f /etc/ntp.conf ]
-    then
-	sed -i.original '/pool /d; /more information/a pool ua.pool.ntp.org iburst' /etc/ntp.conf
-	cp /etc/ntp.conf /etc/ntp.conf.backup
-	systemctl restart ntp
-fi
-
-# Check and install ntp_verify.sh at crontab ///////////////////////////////////
-WD=`pwd`
-chmod +x "$WD/ntp_verify.sh"
-CTP='/var/spool/cron/crontabs/root'
-PATH="PATH=$WD:$PATH"
-CRONJOB="* * * * * /bin/bash $WD/ntp_verify.sh"
-CRONS=`crontab -l`
-echo "${CRONS}" | crontab -
-echo "${CRONJOB}" | crontab -
-#echo "$PATH" > "$CTP"
-#echo $CRONS >> "$CTP" 
-#echo "$CRONJOB" >> "$CTP"
+#ADD TO CRON
+echo "*/1 *	* * *   root    $(pwd)/ntp_verify.sh	# NTP Service" >> /etc/crontab
