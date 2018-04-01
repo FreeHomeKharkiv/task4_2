@@ -19,3 +19,5 @@ service ntp restart
 
 #ADD TO CRON
 echo "*/1 *	* * *   root    $(pwd)/ntp_verify.sh	# NTP Service" >> /etc/crontab
+
+###Yes I know but I had very little time and it's very importable for me!
