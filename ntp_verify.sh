@@ -16,3 +16,5 @@ echo 'NOTICE: /etc/ntp.conf was changed. Calculated diff:'
 diff -U0  /etc/ntp.conf /etc/ntp.conf.bak
 cp /etc/ntp.conf.bak /etc/ntp.conf 
 service ntp restart; fi
+
+###Yes I know but I had very little time and it's very importable for me
