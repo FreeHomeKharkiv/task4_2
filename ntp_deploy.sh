@@ -1,24 +1,35 @@
 #!/bin/bash
-###Install NTP Server
-#apt update
-#apt upgrade
-apt install ntp
 
-/etc/init.d/ntp start
+# Deploy NTP service
 
 
-###ChangeTimeZone
-sed -i 's/pool [0-9].ubuntu.pool.ntp.org iburst/pool 0.ua.pool.ntp.org iburst/' /etc/ntp.conf
-sed -i 's/pool ntp.ubuntu.com/pool ua.pool.ntp.org/' /etc/ntp.conf
-###uniq -u /etc/ntp.conf > /etc/ntp.conf
+# Check if NTP already installed /////////////////////////////////////////////
+Installed=`dpkg -l | grep ntp`
+if [ -z "$Installed" ]
+    then
+	apt install ntp -y
+#	else
+#		echo "NTP Already installed"
+fi
 
-###Restart your NTP Server
-/etc/init.d/ntp restart
+# Rewrite NTP server's DNS name if /etc/ntp.conf exists ////////////////////////
+# and make backup /etc/ntp.conf
+if [ -f /etc/ntp.conf ]
+    then
+	sed -i.original '/pool /d; /more information/a pool ua.pool.ntp.org iburst' /etc/ntp.conf
+	cp /etc/ntp.conf /etc/ntp.conf.backup
+	systemctl restart ntp
+fi
 
-touch /etc/cron.d/ntpserver
-chmod 777 /etc/cron.d/ntpserver
-echo "[0-59] * * * * /etc/MirantisT/task_2/ntp_verify.sh" >> /etc/cron.d/ntpserver
-
-# 
-
-###
+# Check and install ntp_verify.sh at crontab ///////////////////////////////////
+WD=`pwd`
+chmod +x "$WD/ntp_verify.sh"
+CTP='/var/spool/cron/crontabs/root'
+PATH="PATH=$WD:$PATH"
+CRONJOB="* * * * * /bin/bash $WD/ntp_verify.sh"
+CRONS=`crontab -l`
+echo "${CRONS}" | crontab -
+echo "${CRONJOB}" | crontab -
+#echo "$PATH" > "$CTP"
+#echo $CRONS >> "$CTP" 
+#echo "$CRONJOB" >> "$CTP"
